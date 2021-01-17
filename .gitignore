@@ -1,0 +1,5 @@
+out
+.vs
+.git
+LightDisplay/glad/include
+LightDisplay/glad/src
