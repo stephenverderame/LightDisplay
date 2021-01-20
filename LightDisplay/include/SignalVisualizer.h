@@ -28,3 +28,32 @@ public:
 	virtual ~SignalVisualizer() = default;
 };
 std::unique_ptr<SignalVisualizer> getSignalVisualizer();
+
+class FreqToColorStradegy {
+public:
+	/**
+	 * Converts the given frequency to a color
+	 * @return Color whose r,g, and b values correspond to a particular mapping from the frequency. 
+	 * Alpha of the color may or may not be meaningful
+	 */
+	virtual Color operator()(double frequency) = 0;
+	virtual ~FreqToColorStradegy() = default;
+};
+
+class SynthesiaFreqToColor : public FreqToColorStradegy {
+public:
+	Color operator()(double freq) override;
+};
+/// Tera hertz
+constexpr double operator "" _thz(long double d) {
+	return static_cast<double>(d * 1000000000000);
+}
+/// Nanomemters
+constexpr double operator "" _nm(long double d) {
+	return static_cast<double>(d * 0.000000001);
+}
+
+/**
+ * Converts a lower frequency to a sound frequency by incrementing the octave of the representative frequency
+ */
+double octaveUpToLight(double f);

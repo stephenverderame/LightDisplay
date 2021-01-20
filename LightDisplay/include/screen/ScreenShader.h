@@ -10,6 +10,7 @@ protected:
 private:
 public:
 	ScreenShader(std::istream& vertex, std::istream& fragment);
+	ScreenShader(std::istream& vertex, std::istream& geometry, std::istream& fragment);
 	~ScreenShader();
 	ScreenShader(const ScreenShader&) = delete;
 	ScreenShader& operator=(const ScreenShader&) = delete;

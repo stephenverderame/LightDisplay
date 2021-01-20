@@ -102,7 +102,8 @@ signal_t FFT::bitReverse(signal_t&& s)
 }
 
 FFT::Signal::Signal(signal_t&& s, double samplingFrequency)
-	: s(FFT::fft(std::move(s))), samplingFrequency(samplingFrequency), average(-10)
+	: duration(static_cast<long long>(s.size() / samplingFrequency * 1000000)), 
+	s(FFT::fft(std::move(s))), samplingFrequency(samplingFrequency), average(-10)
 
 {
 }

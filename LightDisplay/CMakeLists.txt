@@ -7,8 +7,6 @@ find_package(OpenGL REQUIRED)
 
 # Setup glad
 add_subdirectory ("glad")
-#set(GLAD_INCLUDE_DIR "glad/include")
-file(GLOB_RECURSE GLAD_HEADERS "glad/include/*.h")
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

@@ -11,7 +11,7 @@ macro(external_add filename pkname)
 		WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/${pkname}-download")
 	set(${pkname}_SUBDIRS "${CMAKE_BINARY_DIR}/${pkname}-src"
 	"${CMAKE_BINARY_DIR}/${pkname}-build")
-endmacro()
+endmacro() 
 
 #Install googletest
 external_add(CMakeLists.txt.in gtest)

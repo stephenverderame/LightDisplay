@@ -1,8 +1,11 @@
 #version 460 core
-in vec4 fragColor;
+struct GsOut {
+	vec4 fragColor;
+};
+in GsOut gsOut;
 
-out vec4 _fragColor;
+out vec4 frag_color;
 
 void main() {
-	_fragColor = fragColor;
+	frag_color = gsOut.fragColor;
 }

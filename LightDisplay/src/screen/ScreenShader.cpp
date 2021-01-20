@@ -5,7 +5,8 @@
 
 enum class ShaderType : GLenum {
 	vertex = GL_VERTEX_SHADER,
-	frag = GL_FRAGMENT_SHADER
+	frag = GL_FRAGMENT_SHADER,
+	geom = GL_GEOMETRY_SHADER
 };
 struct RawShader {
 	ShaderType type;
@@ -35,34 +36,45 @@ inline auto compileShader(const char* sourceCode, ShaderType type) {
 	}
 	return RawShader{ type, shader };
 }
-inline auto linkShaders(const RawShader& vertex, const RawShader& fragment) {
+inline auto linkShaders(const RawShader& vertex, const RawShader& fragment, const RawShader* geometry = nullptr) {
 	auto program = glCreateProgram();
 	glAttachShader(program, vertex.shader);
 	glAttachShader(program, fragment.shader);
+	if (geometry != nullptr) glAttachShader(program, geometry->shader);
 	glLinkProgram(program);
 	int success = 0;
 	glGetProgramiv(program, GL_LINK_STATUS, &success);
 	if (!success) {
 		char log[1024];
 		glGetProgramInfoLog(program, 1024, nullptr, log);
+		fprintf(stderr, log);
 		glDeleteProgram(program);
 		throw std::runtime_error(log);
 	}
 	return program;
 
 }
+inline auto streamToShader(std::istream& s, ShaderType type) {
+	std::noskipws(s);
+	std::string str{ std::istream_iterator<char>(s), {} };
+	return compileShader(str.c_str(), type);
+}
 
 ScreenShader::ScreenShader(std::istream& vertex, std::istream& fragment)
 {
-	std::noskipws(vertex);
-	std::noskipws(fragment); //don't skip whitespaces
-	std::string vert{ std::istream_iterator<char>(vertex), {} };
-	std::string frag{ std::istream_iterator<char>(fragment), {} };
-	auto vertexShader = compileShader(vert.c_str(), ShaderType::vertex);
-	auto fragmentShader = compileShader(frag.c_str(), ShaderType::frag);
+	auto vertexShader = streamToShader(vertex, ShaderType::vertex);
+	auto fragmentShader = streamToShader(fragment, ShaderType::frag);
 	programId = linkShaders(vertexShader, fragmentShader);
 
 
+}
+
+ScreenShader::ScreenShader(std::istream& vertex, std::istream& geometry, std::istream& fragment)
+{
+	auto vertexShader = streamToShader(vertex, ShaderType::vertex);
+	auto fragmentShader = streamToShader(fragment, ShaderType::frag);
+	auto geomShader = streamToShader(geometry, ShaderType::geom);
+	programId = linkShaders(vertexShader, fragmentShader, &geomShader);
 }
 
 ScreenShader::~ScreenShader()

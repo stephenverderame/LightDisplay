@@ -27,6 +27,7 @@ namespace FFT {
 
 	class Signal {
 	private:
+		std::chrono::microseconds duration;
 		signal_t s; ///< Signal after the application of the FFT
 		double samplingFrequency;
 		mutable double average; ///< average magnitude or < 0 if it has yet to be calculated
@@ -42,6 +43,7 @@ namespace FFT {
 		 */
 		std::vector<std::pair<double, double>> amplitudeList() const;
 		double avgMagnitude() const;
+		auto getDuration() const { return duration; }
 	private:
 		inline double magnitudeOfIndex(size_t index) const {
 			return sqrt(s[index].imag() * s[index].imag() + s[index].real() * s[index].real()) 

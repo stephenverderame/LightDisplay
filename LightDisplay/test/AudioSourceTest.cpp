@@ -12,20 +12,23 @@ std::vector<int16_t> readAudioSource(const char* file) {
 	f.seekg(22);
 	int16_t channels = 0;
 	f.read(reinterpret_cast<char*>(&channels), sizeof(channels));
+	EXPECT_TRUE(channels == 1 || channels == 2);
+	if (channels <= 0 || channels > 2) throw std::invalid_argument(std::to_string(channels));
 	f.seekg(44, std::ios::beg);
 	int res = 0;
-	std::vector<int16_t> result;
-	while (f.tellg() != end) {
-		for (decltype(channels) i = 0; i < channels; ++i) {
-			int16_t r = 0;
-			f.read((char*)&r, sizeof(int16_t));
-			res += r;
+	std::vector<int16_t> result(end - std::streampos(44));
+	f.read((char*)result.data(), result.size() * sizeof(int16_t));
+	if (channels == 1) return result;
+	std::vector<int16_t> combined(result.size() / channels);
+	for (auto i = 0; i < combined.size(); ++i) {
+		for (auto j = 0; j < channels; ++j) {
+			res += result[(long long)channels * i + j];
 		}
-		res /= (int)channels;
-		result.push_back((int16_t)res);
+		res /= channels;
+		combined[i] = (int16_t)res;
 		res = 0;
 	}
-	return result;
+	return combined;
 }
 void assertCorrectSample(const std::vector<int16_t>& real, const signal_t& read, size_t & ptr) {
 	auto i = decltype(read.size()){0};

@@ -1,6 +1,5 @@
 #include <WavAudioSource.h>
 #include <istream>
-
 signal_t WavAudioSource::sample(std::chrono::milliseconds duration)
 {
 	const auto sampleNum = nextPowerOf2(
@@ -63,31 +62,28 @@ inline uint16_t readBps(std::istream& wavFile) {
 }
 
 template<typename T>
-std::vector<int16_t> signalFromMonoChannel(std::istream& wavFile) {
-	std::vector<int16_t> sig;
-	T c = 0;
+std::vector<T> loadData(std::istream& wavFile) {
 	wavFile.seekg(0, std::ios::end);
 	auto end = wavFile.tellg();
+	auto bytes = end - std::streampos(44);
 	wavFile.seekg(44);
-	while (wavFile.tellg() != end) {
-		wavFile.read(reinterpret_cast<char*>(&c), sizeof(c));
-		sig.push_back(c);
-	}
-	return sig;
+	std::vector<T> data(bytes / sizeof(T));
+	wavFile.read(reinterpret_cast<char*>(&data[0]), bytes);
+	return data;
 }
 template<typename T>
-std::vector<int16_t> signalFromDualChannel(std::istream& wavFile) {
-	std::vector<int16_t> sig;
-	T c1 = 0, c2 = 0;
-	wavFile.seekg(0, std::ios::end);
-	auto end = wavFile.tellg();
-	wavFile.seekg(44);
-	while (wavFile.tellg() != end) {
-		wavFile.read(reinterpret_cast<char*>(&c1), sizeof(T));
-		wavFile.read(reinterpret_cast<char*>(&c2), sizeof(T));
-		sig.push_back(static_cast<int16_t>(((int)c1 + c2) / 2));
+std::vector<int16_t> mergeChannels(std::vector<T>&& data, int channels) {
+	if (channels == 1) return { data.begin(), data.end() };
+	std::vector<int16_t> result(data.size() / channels);
+	for (decltype(data.size()) i = 0; i < result.size(); ++i) {
+		int res = 0;
+		for (auto j = 0; j < channels; ++j) {
+			res += data[i * channels + j];
+		}
+		result[i] = static_cast<int16_t>(res);
 	}
-	return sig;
+	return result;
+
 }
 inline bool isValidBps(uint16_t bitsPerSample) {
 	return bitsPerSample == 8 || bitsPerSample == 16;
@@ -100,13 +96,14 @@ WavAudioSource::WavAudioSource(std::istream& wavFile)
 	auto channelNum = readChannelNum(wavFile);
 	sampleRate = readSampleRate(wavFile);
 	auto bitsPerSample = readBps(wavFile);
-	if (channelNum == 1) {
-		audioSignal = bitsPerSample == 8 ? signalFromMonoChannel<unsigned char>(wavFile) :
-			signalFromMonoChannel<int16_t>(wavFile);
+	if (bitsPerSample == 8) {
+		audioSignal = mergeChannels(loadData<unsigned char>(wavFile), channelNum);
 	}
-	else if (channelNum == 2) {
-		audioSignal = bitsPerSample == 8 ? signalFromDualChannel<unsigned char>(wavFile) :
-			signalFromDualChannel<int16_t>(wavFile);
+	else if (bitsPerSample == 16) {
+		audioSignal = mergeChannels(loadData<int16_t>(wavFile), channelNum);
+	}
+	else {
+		throw std::invalid_argument("Invalid bits per sample");
 	}
 	ptr = audioSignal.begin();
 }
