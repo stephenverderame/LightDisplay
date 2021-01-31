@@ -23,6 +23,9 @@ function(make_test NAME)
 	add_dependencies(${NAME} gtest gmock)
 	target_link_libraries(${NAME} PRIVATE gtest PRIVATE gmock PRIVATE glfw 
 		PRIVATE OpenGL::GL PRIVATE glad PRIVATE glm)
+	if(WIN32)
+		target_link_libraries(${NAME} PRIVATE wsock32 PRIVATE ws2_32 PRIVATE Bthprops)
+	endif()
 
 	if(${MK_TEST_WORKING_DIRECTORY})
 		add_test(NAME ${NAME} COMMAND ${NAME}

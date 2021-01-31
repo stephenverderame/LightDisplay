@@ -14,6 +14,11 @@ inline bool isPowerOf2(size_t n) {
 inline void assertLengthPowerOf2(const signal_t& s) {
 	if (!isPowerOf2(s.size())) throw std::invalid_argument("Must have a power of 2 length");
 }
+inline void padToPowerOf2(signal_t& sig) {
+	decltype(sig.size()) s = 1;
+	while ((s <<= decltype(s){1}) < sig.size());
+	sig.resize(s, 0);
+}
 /// @return least number of bits needed to represent n
 unsigned char FFT::numBits(size_t n) {
 	unsigned char c = 0;
@@ -64,10 +69,31 @@ inline void butterfly(signal_t& s, size_t butterflySize) {
 		}
 	}
 }
+void butterfly_mt(signal_t& s, size_t butterflySize, size_t startIndex, size_t endIndex,
+	cmplx_t twiddleFactor)
+{
+	const auto hMergeSize = butterflySize >> 1; //half of butterfly size
+	if (butterflySize > 2) {
+		const auto smallerTwiddle = exp(cmplx_t{ 0, -pi2 / hMergeSize });
+		auto fu = std::async(butterfly_mt, std::ref(s), hMergeSize, startIndex, (endIndex + startIndex) / 2, smallerTwiddle);
+		butterfly_mt(s, hMergeSize, (endIndex + startIndex) / 2, endIndex, smallerTwiddle);
+		fu.get();
+	}
+	for (auto j = startIndex; j < endIndex; j += butterflySize) {// for each butterfly chunk in the list
+		for (auto i = decltype(butterflySize){0}; i < hMergeSize; ++i) {
+			const auto wn = pow(twiddleFactor, i);
+			const auto temp = s[j + i];
+			s[j + i] = s[j + i] + wn * s[j + hMergeSize + i];
+			s[j + hMergeSize + i] = temp - wn * s[j + hMergeSize + i];
+
+		}
+	}
+}
 
 signal_t FFT::fft(signal_t&& s)
 {
-	//s.size() is a power of 2
+	if (!isPowerOf2(s.size()))
+		padToPowerOf2(s);
 	s = bitReverse(std::move(s));
 	size_t mergeSize = 2;
 	const auto sz = s.size();
@@ -75,6 +101,7 @@ signal_t FFT::fft(signal_t&& s)
 		butterfly(s, mergeSize);
 		mergeSize <<= 1;
 	}
+//	butterfly_mt(s, s.size(), 0, s.size(), exp(cmplx_t{ 0, -pi2 / s.size() }));
 	return s;
 
 }

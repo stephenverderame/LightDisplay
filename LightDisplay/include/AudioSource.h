@@ -22,3 +22,4 @@ public:
 
 };
 std::unique_ptr<AudioSource> makeStreamAudioSource(std::istream& is);
+AudioSource* makeLoopbackAudioSource();

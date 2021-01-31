@@ -22,6 +22,9 @@ add_executable (LightDisplay ${SOURCES} "LightDisplay.cpp")
 target_include_directories(LightDisplay PRIVATE ${INCLUDE_DIRECTORIES})
 add_dependencies(LightDisplay OpenGL::GL glfw glad glm)
 target_link_libraries(LightDisplay PRIVATE glfw PRIVATE OpenGL::GL PRIVATE glad PRIVATE glm)
+if(WIN32)
+	target_link_libraries(LightDisplay PRIVATE wsock32 PRIVATE ws2_32 PRIVATE Bthprops)
+endif()
 
 
 function(cp_dir source dest)

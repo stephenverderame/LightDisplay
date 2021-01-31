@@ -88,8 +88,8 @@ bool eqEnough(const signal_t& a, const signal_t& b) {
 }
 TEST(FFTTest, fft)
 {
-	constexpr auto test_num = 100;
-	constexpr auto test_size = 100; //reduced after successful tests to keep the entire test suite short
+	constexpr auto test_num = 1000;
+	constexpr auto test_size = 1000; //reduced after successful tests to keep the entire test suite short
 	signal_t start = { 5, 3, 2, 1 };
 	signal_t res = { 11, {3, -2}, 3, {3, 2} };
 	ASSERT_EQ(FFT::fft(std::move(start)), res);

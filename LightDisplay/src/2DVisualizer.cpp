@@ -2,10 +2,9 @@
 #include <vector>
 #include <algorithm>
 
-template<typename K, typename V>
+template<typename K, typename V> requires std::is_arithmetic_v<K> && std::is_arithmetic_v<V>
 /// Requires v be at least size 1
-inline std::enable_if_t<std::is_arithmetic_v<V>, std::pair<K, V>>
-getMaxValues(const std::vector<std::pair<K, V>>& v)
+inline std::pair<K, V> getMaxValues(const std::vector<std::pair<K, V>>& v)
 {
 	K nearMax = v[0].first;
 	V max = v[0].second;
@@ -30,7 +29,7 @@ std::vector<Visual> Visualizer2D::signalToVisuals(const std::vector<std::pair<do
 	const auto localMax = getMaxValues(signal);
 	for (auto i = decltype(signal.size()){0}; i < signal.size(); ++i) {
 		visuals[i].color = (*stradegy)(signal[i].first);
-//		visuals[i].color.a = static_cast<unsigned char>((signal[i].second / localMax.second) * 255);
+		visuals[i].color.a = static_cast<unsigned char>((signal[i].second / localMax.second) * 255);
 		visuals[i].ndcX = toNDC(signal[i].first, localMax.first);
 			//toNDC(octaveUpToLight(signal[i].first), 700._thz, 400._thz);
 		visuals[i].ndcY = toNDC(signal[i].second, localMax.second);

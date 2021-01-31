@@ -33,7 +33,7 @@ namespace FFT {
 		mutable double average; ///< average magnitude or < 0 if it has yet to be calculated
 	public:
 		/**
-		 * @param s the raw signal received from a wave source. Required to have a power of 2 size
+		 * @param s the raw signal received from a wave source. Will be padded to have a power of 2 size
 		 * @param samplingFrequency sr of the signal
 		 */
 		Signal(signal_t&& s, double samplingFrequency);
