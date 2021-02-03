@@ -7,12 +7,12 @@ concept Functor = requires(T a, Arg arg) {
 };
 
 template<typename T>
-concept Handle = std::is_integral_v<T> || std::is_pointer_v<T>;
+concept Handle_c = std::is_integral_v<T> || std::is_pointer_v<T>;
 
 /**
  * Class to ensure the call of a specified one argument functor when it goes out of scope
  */
-template<typename T, Functor<T> F> requires Handle<T>
+template<typename T, Functor<T> F> requires Handle_c<T>
 	class ResourceWrapper {
 	private:
 		T t;

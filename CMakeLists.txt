@@ -31,7 +31,9 @@ set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(GLFW_INCLUDE_DIR "${CMAKE_BINARY_DIR}/glfw-src/include")
 set(GLFW_SOURCE_DIR "${CMAKE_BINARY_DIR}/glfw-src/src")
 
-set(_GLFW_WIN32)
+if(WIN32)
+	set(_GLFW_WIN32)
+endif()
 
 add_subdirectory(${glfw_SUBDIRS})
 

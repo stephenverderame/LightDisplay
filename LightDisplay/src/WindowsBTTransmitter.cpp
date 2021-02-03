@@ -1,10 +1,11 @@
 #include <WindowsBTTransmitter.h>
-#include <WinSock2.h>
+#include <WSA.h>
 #include <ws2bth.h>
 #include <bluetoothapis.h>
 #include <stdexcept>
 #include <RAII.h>
 #include <wchar.h>
+#include <WindowsBTImpl.h>
 /**
  * Finds the bluetooth devices connected to the specified radio
  * @param predicate a function that takes a bluetooth info struct and returns a boolean
@@ -59,80 +60,50 @@ auto getBtDeviceAddr() {
 	}
 	return addr;
 }
-
-unsigned WindowsBT::refCount = 0;
-inline Handle_t createBtSocket() {
-	auto res = ::socket(AF_BTH, SOCK_STREAM, BTHPROTO_RFCOMM);
-	if (res == INVALID_SOCKET)
-		throw std::runtime_error("Cannot create socket");
-	return res;
-}
-inline auto createBTAddr(unsigned short port, BTH_ADDR addr) {
-	SOCKADDR_BTH addrInfo;
-	ZeroMemory(&addrInfo, sizeof(addrInfo));
-	addrInfo.port = 1;
-	addrInfo.addressFamily = AF_BTH;
-	addrInfo.btAddr = addr;
-	return addrInfo;
-}
-WindowsBT::WindowsBT()
+template<SocketPolicy sp>
+WindowsBT<sp>::WindowsBT(typename sp::Address_t addr)
 {
-	if (refCount++ == 0) {
-		WSAData d;
-		if(FAILED(WSAStartup(MAKEWORD(2, 1), &d)))
-			throw std::bad_alloc();
-	}
-	auto addr = findBtDevice([](auto& device) {
-		return wcsstr(device.szName, L"Mpow");
-	});
-	this->socket = createBtSocket();
-	auto addrInfo = createBTAddr(1, addr.ullLong);
+	WSA::init();
+	this->socket = sp::createSocket();
+	auto addrInfo = sp::createAddr(8008, addr);
 	if (connect(this->socket, (sockaddr*)&addrInfo, sizeof(addrInfo)) == SOCKET_ERROR) {
-		fprintf(stderr, "Failed to connect\n");
+		fprintf(stderr, "Failed to connect %d\n", WSAGetLastError());
 		throw std::runtime_error("Failed to connect");
 	}
 }
+template<SocketPolicy sp>
+WindowsBT<sp>::WindowsBT() : WindowsBT(
+	static_cast<typename sp::Address_t>(findBtDevice([](auto& device) {
+		return wcsstr(device.szName, L"Mpow");
+	}).ullLong)) {
+	//Cannot be a compile time check because we manually initialize the valid templates to keep them in a cpp file
+	if(!std::is_same_v<sp, BluetoothStreamPolicy>) 
+		throw std::runtime_error("Default constructor must be applied on a bluetooth policy");
+}
 
-WindowsBT::~WindowsBT()
+template<SocketPolicy sp>
+WindowsBT<sp>::~WindowsBT()
 {
 	if (this->socket != INVALID_SOCKET)
 		closesocket(this->socket);
-	if (--refCount == 0) {
-		WSACleanup();
-	}
+	WSA::cleanup();
 	
 }
-/**
- * Guaruntees the sending of data entirely, or an error
- * @return 0 or a WSA error code
- */
-template<typename T>
-inline int sendAll(Handle_t sock, const std::vector<T>& data) {
-	const auto totalSize = data.size() * sizeof(T);
-	int err = 0;
-	decltype(totalSize) sent = 0;
-	do {
-		err = send(sock, reinterpret_cast<const char*>(&data[0]) + sent,
-			totalSize - sent, 0);
-		if (err > 0) sent += err;
-		else {
-			err = -WSAGetLastError();
-		}
-	} while (sent < totalSize && err > 0);
-	return err < 0 ? -err : 0;
-}
 
-void WindowsBT::transmit(const std::vector<Visual>& visuals)
+template<SocketPolicy sp>
+void WindowsBT<sp>::transmit(const std::vector<Visual>& visuals)
 {
 	/* Frame Layout ---
 	* Size (8 bytes)
 	* Data (Size bytes)
 	*/
 	const unsigned long long size = sizeof(Visual) * visuals.size();
-	const auto v = std::vector<decltype(size)>{ size };
 	int ret = 0;
-	if ((ret = sendAll(this->socket, v)) != 0 ||
+	if ((ret = sendAll(this->socket, size)) != 0 ||
 		(ret = sendAll(this->socket, visuals)) != 0) {
 		fprintf(stderr, "Could not send data. Error code: %d\n", ret);
 	}
 }
+// Initialize valid template instantiations to allow definition in cpp file
+template WindowsBT<BluetoothStreamPolicy>;
+template WindowsBT<Ipv4TcpPolicy>;

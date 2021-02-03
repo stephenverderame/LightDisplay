@@ -2,5 +2,5 @@
 #include <WindowsBTTransmitter.h>
 std::unique_ptr<VisualTransmitter> getTransmitter()
 {
-	return std::make_unique<WindowsBT>();
+	return std::make_unique<WindowsBT<BluetoothStreamPolicy>>();
 }

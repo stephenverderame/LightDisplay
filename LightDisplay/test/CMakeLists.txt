@@ -39,4 +39,5 @@ endfunction()
 make_test(FFTTest SOURCES "FFTTest.cpp" "FFTCmpImpl.h")
 make_test(AudioTest SOURCES "AudioSourceTest.cpp" 
 	WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/LightDisplay/test/res")
+make_test(BTTest SOURCES "BTTest.cpp")
 cp_dir("${CMAKE_CURRENT_SOURCE_DIR}/res" "${CMAKE_CURRENT_BINARY_DIR}/res")
